@@ -39,6 +39,12 @@ export default function Game() {
   }
 
   function handleMaxClick() {
+    if (smallestOnly.current) {
+      smallestOnly.current = false;
+      next.current = Math.floor(Math.random() * 5);
+      maxClickStreak.current = 0;
+      return;
+    }
     maxClickStreak.current += 1;
     if (maxClickStreak.current === 10) {
       smallestOnly.current = true;
@@ -56,6 +62,14 @@ export default function Game() {
     ctx.scale(pixelRatio, pixelRatio);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
+    const celebratedBalls = new WeakSet<object>();
+    const celebrations: Array<{
+      x: number;
+      y: number;
+      startedAt: number;
+      particles: Array<{ angle: number; speed: number; spin: number; size: number; color: string }>;
+    }> = [];
+    const celebrationColors = ['#f04444','#ffb21c','#6857d9','#29b66f','#2c8ee6','#f46bb1'];
     const logoSprites: (HTMLCanvasElement | null)[] = SCHOOLS.map(() => null);
     SCHOOLS.forEach((_, i) => {
       const image = new Image();
@@ -131,6 +145,60 @@ export default function Game() {
       ctx.restore();
     };
 
+    const launchCelebration = (ball: any, time: number) => {
+      celebratedBalls.add(ball);
+      celebrations.push({
+        x: ball.x,
+        y: ball.y,
+        startedAt: time,
+        particles: Array.from({ length: 72 }, (_, i) => ({
+          angle: (Math.PI * 2 * i) / 72 + (Math.random() - .5) * .18,
+          speed: 85 + Math.random() * 155,
+          spin: (Math.random() - .5) * 12,
+          size: 3 + Math.random() * 5,
+          color: celebrationColors[i % celebrationColors.length],
+        })),
+      });
+    };
+
+    const drawCelebrations = (time: number) => {
+      for (let i = celebrations.length - 1; i >= 0; i--) {
+        const burst = celebrations[i];
+        const elapsed = (time - burst.startedAt) / 1000;
+        if (elapsed >= 1.35) { celebrations.splice(i, 1); continue; }
+        const alpha = Math.min(1, (1.35 - elapsed) / .35);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        if (elapsed < .65) {
+          const ring = 24 + elapsed * 150;
+          ctx.beginPath();
+          ctx.arc(burst.x, burst.y, ring, 0, Math.PI * 2);
+          ctx.strokeStyle = '#fff4a3';
+          ctx.lineWidth = 5 * (1 - elapsed / .65);
+          ctx.stroke();
+        }
+        for (const particle of burst.particles) {
+          const distance = particle.speed * elapsed;
+          const x = burst.x + Math.cos(particle.angle) * distance;
+          const y = burst.y + Math.sin(particle.angle) * distance + 105 * elapsed * elapsed;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(particle.spin * elapsed);
+          ctx.fillStyle = particle.color;
+          ctx.fillRect(-particle.size / 2, -particle.size, particle.size, particle.size * 2);
+          ctx.restore();
+        }
+        const pop = Math.min(1, elapsed / .18);
+        ctx.translate(burst.x, burst.y - 92 - Math.sin(Math.min(1, elapsed) * Math.PI) * 25);
+        ctx.scale(.6 + .4 * pop, .6 + .4 * pop);
+        ctx.font = '42px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🎉', 0, 0);
+        ctx.restore();
+      }
+    };
+
     let frame = 0, previous = 0, accumulator = 0, lastUI = 0;
     const draw = (time: number) => {
       if (!previous) previous = time;
@@ -138,6 +206,9 @@ export default function Game() {
       previous = time;
       const w = world.current;
       while (accumulator >= 1 / 120) { w.step(); accumulator -= 1 / 120; }
+      for (const ball of w.balls) {
+        if (ball.level === 10 && !celebratedBalls.has(ball)) launchCelebration(ball, time);
+      }
       ctx.clearRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
       ctx.save();
       ctx.setLineDash([8, 7]);
@@ -160,6 +231,7 @@ export default function Game() {
           ctx.lineWidth = 2 * (1 - t); ctx.stroke(); ctx.globalAlpha = 1;
         }
       }
+      drawCelebrations(time);
       const r = RADII[next.current];
       drawBall({ x: Math.max(r, Math.min(WORLD_WIDTH - r, pointerX.current)), y: spawnY(next.current), r, level: next.current }, 1, 0.5);
       if (time - lastUI > 120) { syncRecords(); lastUI = time; }
