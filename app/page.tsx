@@ -8,6 +8,11 @@ const SCHOOLS = ['西安交通大学','武汉大学','哈尔滨工业大学','�
 const COLORS = ['#b83d3e','#57709e','#204d7b','#2c68a0','#4c7669','#355bb0','#aa3639','#3d84c6','#bc4b5b','#a26d78','#7c9cdb'];
 const WORLD_WIDTH = 420;
 const WORLD_HEIGHT = 651;
+const compactScore = new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 1 });
+
+function formatScore(value: number) {
+  return value < 10_000 ? String(value) : compactScore.format(value);
+}
 
 export default function Game() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -37,10 +42,36 @@ export default function Game() {
     ctx.scale(pixelRatio, pixelRatio);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    const logos = SCHOOLS.map((_, i) => {
+    const logoSprites: (HTMLCanvasElement | null)[] = SCHOOLS.map(() => null);
+    SCHOOLS.forEach((_, i) => {
       const image = new Image();
       image.src = `/logos/${i + 1}.svg`;
-      return image;
+      image.onload = () => {
+        const radius = RADII[i];
+        const diameter = radius * 2;
+        const sprite = document.createElement('canvas');
+        sprite.width = Math.ceil(diameter * pixelRatio);
+        sprite.height = Math.ceil(diameter * pixelRatio);
+        const spriteCtx = sprite.getContext('2d')!;
+        spriteCtx.scale(pixelRatio, pixelRatio);
+        spriteCtx.imageSmoothingEnabled = true;
+        spriteCtx.imageSmoothingQuality = 'high';
+        spriteCtx.beginPath();
+        spriteCtx.arc(radius, radius, radius, 0, Math.PI * 2);
+        spriteCtx.fillStyle = '#fff';
+        spriteCtx.fill();
+        spriteCtx.clip();
+        const ratio = Math.max(diameter / image.naturalWidth, diameter / image.naturalHeight);
+        const width = image.naturalWidth * ratio;
+        const height = image.naturalHeight * ratio;
+        spriteCtx.drawImage(image, radius - width / 2, radius - height / 2, width, height);
+        spriteCtx.beginPath();
+        spriteCtx.arc(radius, radius, radius - .75, 0, Math.PI * 2);
+        spriteCtx.strokeStyle = 'rgba(31, 53, 64, 0.18)';
+        spriteCtx.lineWidth = 1.5;
+        spriteCtx.stroke();
+        logoSprites[i] = sprite;
+      };
     });
     world.current = new World(WORLD_WIDTH, WORLD_HEIGHT);
 
@@ -62,38 +93,27 @@ export default function Game() {
       if (saved.best !== best || saved.max !== max) {
         try { localStorage.setItem('merge11-records', JSON.stringify(records.current)); } catch {}
       }
-      setStats({ score: w.score, best, max });
+      setStats(current => current.score === w.score && current.best === best && current.max === max
+        ? current
+        : { score: w.score, best, max });
     };
     records.current = readRecords();
     setStats({ score: 0, ...records.current });
 
     const drawBall = (b: any, scale = 1, alpha = 1) => {
-      const image = logos[b.level];
+      const sprite = logoSprites[b.level];
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.translate(b.x, b.y);
       ctx.scale(scale, scale);
       ctx.translate(-b.x, -b.y);
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff';
-      ctx.fill();
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.clip();
-      if (image.complete && image.naturalWidth) {
-        const diameter = b.r * 2;
-        const ratio = Math.max(diameter / image.naturalWidth, diameter / image.naturalHeight);
-        const width = image.naturalWidth * ratio, height = image.naturalHeight * ratio;
-        ctx.drawImage(image, b.x - width / 2, b.y - height / 2, width, height);
+      if (sprite) ctx.drawImage(sprite, b.x - b.r, b.y - b.r, b.r * 2, b.r * 2);
+      else {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
       }
-      ctx.restore();
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(31, 53, 64, 0.18)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
       ctx.restore();
     };
 
@@ -168,8 +188,8 @@ export default function Game() {
         <h1>合成国科大</h1>
         <p>点击空位·校徽相遇合成</p>
       </div>
-      <div className="metric metric-score"><span>得分</span><strong>{stats.score.toLocaleString()}</strong></div>
-      <div className="metric"><span>最高</span><strong>{stats.best.toLocaleString()}</strong></div>
+      <div className="metric metric-score" title={`得分：${stats.score.toLocaleString()}`}><span>得分</span><strong>{formatScore(stats.score)}</strong></div>
+      <div className="metric" title={`历史最高：${stats.best.toLocaleString()}`}><span>最高</span><strong>{formatScore(stats.best)}</strong></div>
       <div className="metric max-metric" title={stats.max ? `历史最大：${SCHOOLS[stats.max - 1]}` : '尚无历史最大校徽'}>
         <span>最大</span>
         {stats.max ? <img src={`/logos/${stats.max}.svg`} alt={SCHOOLS[stats.max - 1]} /> : <strong>—</strong>}
