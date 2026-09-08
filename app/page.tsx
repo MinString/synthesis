@@ -8,24 +8,43 @@ const SCHOOLS = ['西安交通大学','武汉大学','哈尔滨工业大学','�
 const COLORS = ['#b83d3e','#57709e','#204d7b','#2c68a0','#4c7669','#355bb0','#aa3639','#3d84c6','#bc4b5b','#a26d78','#7c9cdb'];
 const WORLD_WIDTH = 420;
 const WORLD_HEIGHT = 651;
+const DROP_LINE_Y = 110;
+
+function spawnY(level: number) {
+  return DROP_LINE_Y - RADII[level] - 6;
+}
 
 export default function Game() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const world = useRef<any>(null);
   const next = useRef(0);
-  const pointer = useRef({ x: 210, y: 72, visible: false });
+  const pointerX = useRef(WORLD_WIDTH / 2);
+  const smallestOnly = useRef(false);
+  const maxClickStreak = useRef(0);
   const records = useRef({ best: 0, max: 0 });
   const [stats, setStats] = useState({ score: 0, best: 0, max: 0 });
 
-  function drop(x: number, y: number) {
-    if (world.current?.spawn(x, y, next.current)) next.current = Math.floor(Math.random() * 5);
+  function drop(x: number) {
+    const level = next.current;
+    if (world.current?.spawn(x, spawnY(level), level)) {
+      next.current = smallestOnly.current ? 0 : Math.floor(Math.random() * 5);
+    }
   }
 
   function restart() {
     world.current = new World(WORLD_WIDTH, WORLD_HEIGHT);
-    next.current = Math.floor(Math.random() * 5);
-    pointer.current = { x: WORLD_WIDTH / 2, y: 72, visible: false };
+    next.current = smallestOnly.current ? 0 : Math.floor(Math.random() * 5);
+    pointerX.current = WORLD_WIDTH / 2;
     setStats(current => ({ ...current, score: 0 }));
+  }
+
+  function handleMaxClick() {
+    maxClickStreak.current += 1;
+    if (maxClickStreak.current === 10) {
+      smallestOnly.current = true;
+      next.current = 0;
+      maxClickStreak.current = 0;
+    }
   }
 
   useEffect(() => {
@@ -125,8 +144,10 @@ export default function Game() {
       ctx.strokeStyle = 'rgba(76, 92, 69, 0.18)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(32, 95); ctx.lineTo(WORLD_WIDTH - 32, 95);
-      ctx.moveTo(32, 95); ctx.lineTo(32, WORLD_HEIGHT - 98);
+      ctx.moveTo(0, DROP_LINE_Y); ctx.lineTo(WORLD_WIDTH, DROP_LINE_Y);
+      const previewRadius = RADII[next.current];
+      const previewX = Math.max(previewRadius, Math.min(WORLD_WIDTH - previewRadius, pointerX.current));
+      ctx.moveTo(previewX, DROP_LINE_Y); ctx.lineTo(previewX, WORLD_HEIGHT);
       ctx.stroke();
       ctx.restore();
       for (const b of w.balls) {
@@ -139,10 +160,8 @@ export default function Game() {
           ctx.lineWidth = 2 * (1 - t); ctx.stroke(); ctx.globalAlpha = 1;
         }
       }
-      if (pointer.current.visible) {
-        const r = RADII[next.current];
-        drawBall({ x: Math.max(r, Math.min(WORLD_WIDTH - r, pointer.current.x)), y: Math.max(r, Math.min(WORLD_HEIGHT - r, pointer.current.y)), r, level: next.current }, 1, 0.5);
-      }
+      const r = RADII[next.current];
+      drawBall({ x: Math.max(r, Math.min(WORLD_WIDTH - r, pointerX.current)), y: spawnY(next.current), r, level: next.current }, 1, 0.5);
       if (time - lastUI > 120) { syncRecords(); lastUI = time; }
       frame = requestAnimationFrame(draw);
     };
@@ -164,12 +183,12 @@ export default function Game() {
     try {
       Promise.resolve(context.registerTool({
         name: 'drop_ball',
-        description: '在游戏区域指定空位生成下一颗大学校徽球，坐标范围 x 0–420、y 0–651。',
-        inputSchema: { type: 'object', properties: { x: { type: 'number', minimum: 0, maximum: 420 }, y: { type: 'number', minimum: 0, maximum: 651 } }, required: ['x','y'], additionalProperties: false },
+        description: '在游戏区域指定横向位置放下下一颗大学校徽球，x 范围为 0–420。',
+        inputSchema: { type: 'object', properties: { x: { type: 'number', minimum: 0, maximum: 420 } }, required: ['x'], additionalProperties: false },
         annotations: { readOnlyHint: false },
         execute: (input: any) => {
-          if (!input || !Number.isFinite(input.x) || !Number.isFinite(input.y)) throw new Error('无效坐标');
-          const before = world.current.balls.length; drop(input.x, input.y);
+          if (!input || !Number.isFinite(input.x)) throw new Error('无效坐标');
+          const before = world.current.balls.length; drop(input.x);
           return { created: world.current.balls.length > before };
         },
       }, { signal: lifecycle.signal })).catch(() => {});
@@ -177,7 +196,9 @@ export default function Game() {
     return () => lifecycle.abort();
   }, []);
 
-  return <main className="app">
+  return <main className="app" onPointerDownCapture={event => {
+    if (!(event.target as Element).closest('.max-metric')) maxClickStreak.current = 0;
+  }}>
     <header className="topbar" aria-label="游戏信息">
       <div className="brand">
         <h1>合成国科大</h1>
@@ -185,18 +206,17 @@ export default function Game() {
       </div>
       <div className="metric metric-score" title={`得分：${stats.score.toLocaleString()}`}><span>得分</span><strong>{stats.score.toLocaleString()}</strong></div>
       <div className="metric" title={`历史最高：${stats.best.toLocaleString()}`}><span>最高</span><strong>{stats.best.toLocaleString()}</strong></div>
-      <div className="metric max-metric" title={stats.max ? `历史最大：${SCHOOLS[stats.max - 1]}` : '尚无历史最大校徽'}>
+      <button className="metric max-metric" type="button" onClick={handleMaxClick} title={stats.max ? `历史最大：${SCHOOLS[stats.max - 1]}` : '尚无历史最大校徽'}>
         <span>最大</span>
         {stats.max ? <img src={`/logos/${stats.max}.svg`} alt={SCHOOLS[stats.max - 1]} /> : <strong>—</strong>}
-      </div>
+      </button>
       <button className="restart-button" type="button" onClick={restart} aria-label="重新开始游戏">重开</button>
     </header>
     <div className="basket"><canvas ref={canvas} width={WORLD_WIDTH} height={WORLD_HEIGHT} tabIndex={0}
-      aria-label="大学校徽球合成游戏区域。点击空位生成球；方向键移动落点，空格或回车生成。"
-      onPointerMove={e => { const r = e.currentTarget.getBoundingClientRect(); pointer.current = { x: (e.clientX-r.left)*WORLD_WIDTH/r.width, y: (e.clientY-r.top)*WORLD_HEIGHT/r.height, visible: true }; }}
-      onPointerLeave={() => { pointer.current.visible = false; }}
-      onPointerDown={e => { const r = e.currentTarget.getBoundingClientRect(); drop((e.clientX-r.left)*WORLD_WIDTH/r.width, (e.clientY-r.top)*WORLD_HEIGHT/r.height); }}
-      onKeyDown={e => { const p = pointer.current; if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','Enter'].includes(e.key)) return; e.preventDefault(); p.visible = true; if(e.key==='ArrowLeft')p.x=Math.max(0,p.x-20); if(e.key==='ArrowRight')p.x=Math.min(WORLD_WIDTH,p.x+20); if(e.key==='ArrowUp')p.y=Math.max(0,p.y-20); if(e.key==='ArrowDown')p.y=Math.min(WORLD_HEIGHT,p.y+20); if(e.key===' '||e.key==='Enter')drop(p.x,p.y); }}
+      aria-label="大学校徽球合成游戏区域。移动指针选择落点，点击放下球；左右方向键移动落点，空格或回车放下。"
+      onPointerMove={e => { const bounds = e.currentTarget.getBoundingClientRect(); pointerX.current = (e.clientX-bounds.left)*WORLD_WIDTH/bounds.width; }}
+      onPointerDown={e => { const bounds = e.currentTarget.getBoundingClientRect(); pointerX.current = (e.clientX-bounds.left)*WORLD_WIDTH/bounds.width; drop(pointerX.current); }}
+      onKeyDown={e => { if (!['ArrowLeft','ArrowRight',' ','Enter'].includes(e.key)) return; e.preventDefault(); if(e.key==='ArrowLeft')pointerX.current=Math.max(0,pointerX.current-20); if(e.key==='ArrowRight')pointerX.current=Math.min(WORLD_WIDTH,pointerX.current+20); if(e.key===' '||e.key==='Enter')drop(pointerX.current); }}
     /></div>
   </main>;
 }

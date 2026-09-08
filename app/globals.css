@@ -13,7 +13,7 @@ button{font:inherit}
 .metric span{color:var(--muted);font-size:11px;line-height:12px;font-weight:700;white-space:nowrap}
 .metric strong{color:#29272d;font-size:14px;line-height:20px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .metric-score strong{color:var(--score)}
-.max-metric{width:44px;min-width:44px;padding-inline:4px}.max-metric img{width:20px;height:20px;margin-top:1px;border-radius:50%;object-fit:cover}
+.max-metric{width:44px;min-width:44px;padding-inline:4px;border:0;font:inherit;cursor:pointer}.max-metric img{width:20px;height:20px;margin-top:1px;border-radius:50%;object-fit:cover}
 .restart-button{height:42px;padding:0 6px;border:0;border-radius:12px;background:radial-gradient(circle,#eef1f5 0%,#e6e9f0 100%);color:#4e4a45;font-size:12px;font-weight:800;cursor:pointer}
 .restart-button:hover{filter:brightness(.97)}
 .restart-button:active{transform:scale(.96)}
