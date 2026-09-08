@@ -6,6 +6,8 @@ import { World, RADII } from './physics.mjs';
 
 const SCHOOLS = ['西安交通大学','武汉大学','哈尔滨工业大学','中国人民大学','北京理工大学','浙江大学','上海交通大学','复旦大学','北京大学','清华大学','中国科学院大学'];
 const COLORS = ['#b83d3e','#57709e','#204d7b','#2c68a0','#4c7669','#355bb0','#aa3639','#3d84c6','#bc4b5b','#a26d78','#7c9cdb'];
+const WORLD_WIDTH = 800;
+const WORLD_HEIGHT = 650;
 
 export default function Game() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -21,13 +23,19 @@ export default function Game() {
 
   useEffect(() => {
     const c = canvas.current!;
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 3);
+    c.width = WORLD_WIDTH * pixelRatio;
+    c.height = WORLD_HEIGHT * pixelRatio;
     const ctx = c.getContext('2d')!;
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     const logos = SCHOOLS.map((_, i) => {
       const image = new Image();
       image.src = `/logos/${i + 1}.svg`;
       return image;
     });
-    world.current = new World(800, 650);
+    world.current = new World(WORLD_WIDTH, WORLD_HEIGHT);
 
     const readRecords = () => {
       try {
@@ -89,9 +97,9 @@ export default function Game() {
       previous = time;
       const w = world.current;
       while (accumulator >= 1 / 120) { w.step(); accumulator -= 1 / 120; }
-      ctx.clearRect(0, 0, 800, 650);
-      ctx.fillStyle = '#dce8ed';
-      for (let x = 20; x < 800; x += 30) for (let y = 20; y < 650; y += 30) {
+      ctx.clearRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+      ctx.fillStyle = '#d8e5ea';
+      for (let x = 20; x < WORLD_WIDTH; x += 30) for (let y = 20; y < WORLD_HEIGHT; y += 30) {
         ctx.beginPath(); ctx.arc(x, y, 0.8, 0, Math.PI * 2); ctx.fill();
       }
       for (const b of w.balls) {
@@ -106,7 +114,7 @@ export default function Game() {
       }
       if (pointer.current.visible) {
         const r = RADII[next.current];
-        drawBall({ x: Math.max(r, Math.min(800 - r, pointer.current.x)), y: Math.max(r, Math.min(650 - r, pointer.current.y)), r, level: next.current }, 1, 0.5);
+        drawBall({ x: Math.max(r, Math.min(WORLD_WIDTH - r, pointer.current.x)), y: Math.max(r, Math.min(WORLD_HEIGHT - r, pointer.current.y)), r, level: next.current }, 1, 0.5);
       }
       if (time - lastUI > 120) { syncRecords(); lastUI = time; }
       frame = requestAnimationFrame(draw);
@@ -148,12 +156,12 @@ export default function Game() {
       <div><span>历史最高</span><strong>{stats.best.toLocaleString()}</strong></div>
       <div><span>历史最大</span><strong>{stats.max ? SCHOOLS[stats.max - 1] : '—'}</strong></div>
     </header>
-    <div className="basket"><canvas ref={canvas} width={800} height={650} tabIndex={0}
+    <div className="basket"><canvas ref={canvas} width={WORLD_WIDTH} height={WORLD_HEIGHT} tabIndex={0}
       aria-label="大学校徽球合成游戏区域。点击空位生成球；方向键移动落点，空格或回车生成。"
-      onPointerMove={e => { const r = e.currentTarget.getBoundingClientRect(); pointer.current = { x: (e.clientX-r.left)*800/r.width, y: (e.clientY-r.top)*650/r.height, visible: true }; }}
+      onPointerMove={e => { const r = e.currentTarget.getBoundingClientRect(); pointer.current = { x: (e.clientX-r.left)*WORLD_WIDTH/r.width, y: (e.clientY-r.top)*WORLD_HEIGHT/r.height, visible: true }; }}
       onPointerLeave={() => { pointer.current.visible = false; }}
-      onPointerDown={e => { const r = e.currentTarget.getBoundingClientRect(); drop((e.clientX-r.left)*800/r.width, (e.clientY-r.top)*650/r.height); }}
-      onKeyDown={e => { const p = pointer.current; if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','Enter'].includes(e.key)) return; e.preventDefault(); p.visible = true; if(e.key==='ArrowLeft')p.x=Math.max(0,p.x-20); if(e.key==='ArrowRight')p.x=Math.min(800,p.x+20); if(e.key==='ArrowUp')p.y=Math.max(0,p.y-20); if(e.key==='ArrowDown')p.y=Math.min(650,p.y+20); if(e.key===' '||e.key==='Enter')drop(p.x,p.y); }}
+      onPointerDown={e => { const r = e.currentTarget.getBoundingClientRect(); drop((e.clientX-r.left)*WORLD_WIDTH/r.width, (e.clientY-r.top)*WORLD_HEIGHT/r.height); }}
+      onKeyDown={e => { const p = pointer.current; if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','Enter'].includes(e.key)) return; e.preventDefault(); p.visible = true; if(e.key==='ArrowLeft')p.x=Math.max(0,p.x-20); if(e.key==='ArrowRight')p.x=Math.min(WORLD_WIDTH,p.x+20); if(e.key==='ArrowUp')p.y=Math.max(0,p.y-20); if(e.key==='ArrowDown')p.y=Math.min(WORLD_HEIGHT,p.y+20); if(e.key===' '||e.key==='Enter')drop(p.x,p.y); }}
     /></div>
   </main>;
 }
