@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 // @ts-ignore
 import { World, RADII } from './physics.mjs';
 
-const SCHOOLS = ['中国科学院大学','清华大学','北京大学','复旦大学','上海交通大学','浙江大学','北京理工大学','中国人民大学','哈尔滨工业大学','武汉大学','西安交通大学'];
-const COLORS = ['#7c9cdb','#a26d78','#bc4b5b','#3d84c6','#aa3639','#355bb0','#4c7669','#2c68a0','#204d7b','#57709e','#b83d3e'];
+const SCHOOLS = ['西安交通大学','武汉大学','哈尔滨工业大学','中国人民大学','北京理工大学','浙江大学','上海交通大学','复旦大学','北京大学','清华大学','中国科学院大学'];
+const COLORS = ['#b83d3e','#57709e','#204d7b','#2c68a0','#4c7669','#355bb0','#aa3639','#3d84c6','#bc4b5b','#a26d78','#7c9cdb'];
 
 export default function Game() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -24,8 +24,7 @@ export default function Game() {
     const ctx = c.getContext('2d')!;
     const logos = SCHOOLS.map((_, i) => {
       const image = new Image();
-      const extension = i === 0 ? '.png' : i === 10 ? '.jpg' : '.svg';
-      image.src = `/logos/${i + 1}${extension}`;
+      image.src = `/logos/${i + 1}.svg`;
       return image;
     });
     world.current = new World(800, 650);
@@ -61,24 +60,24 @@ export default function Game() {
       ctx.scale(scale, scale);
       ctx.translate(-b.x, -b.y);
       ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r - 1, 0, Math.PI * 2);
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
       ctx.fillStyle = '#fff';
       ctx.fill();
       ctx.save();
       ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r - 4, 0, Math.PI * 2);
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
       ctx.clip();
       if (image.complete && image.naturalWidth) {
-        const side = b.r * 1.42;
-        const ratio = Math.min(side / image.naturalWidth, side / image.naturalHeight);
+        const diameter = b.r * 2;
+        const ratio = Math.max(diameter / image.naturalWidth, diameter / image.naturalHeight);
         const width = image.naturalWidth * ratio, height = image.naturalHeight * ratio;
         ctx.drawImage(image, b.x - width / 2, b.y - height / 2, width, height);
       }
       ctx.restore();
       ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r - 1, 0, Math.PI * 2);
-      ctx.strokeStyle = COLORS[b.level];
-      ctx.lineWidth = Math.max(2, b.r * 0.07);
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(31, 53, 64, 0.18)';
+      ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.restore();
     };
