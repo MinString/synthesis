@@ -37,11 +37,34 @@
 需要 Node.js 22.13 或更高版本。
 
 ```bash
-npm ci
+npm ci --include=optional
 npm run dev
 ```
 
 启动后打开 [http://localhost:3000/](http://localhost:3000/)。
+
+### Linux 下 `sharp` 安装失败
+
+`sharp` 依赖针对当前系统的预编译可选包，因此不要使用 `--omit=optional`。如果在 x64 glibc Linux 上看到 `Attempting to build from source via node-gyp`，可显式指定平台重新安装：
+
+```bash
+npm ci --include=optional --os=linux --cpu=x64 --libc=glibc
+```
+
+安装前请先确认项目所在磁盘可写：
+
+```bash
+test -w . && echo "目录可写" || echo "目录只读"
+```
+
+如果项目位于只读挂载的 NTFS 分区，请先修复或重新以可写模式挂载该分区。也可以将项目复制到 Linux 主目录后再安装：
+
+```bash
+mkdir -p ~/Projects/GreatUCAS
+rsync -a --exclude node_modules ./ ~/Projects/GreatUCAS/
+cd ~/Projects/GreatUCAS
+npm ci --include=optional --os=linux --cpu=x64 --libc=glibc
+```
 
 ## 局域网访问
 
@@ -58,7 +81,7 @@ npm run dev -- --hostname 0.0.0.0
 生成生产构建：
 
 ```bash
-npm ci
+npm ci --include=optional
 npm run build
 ```
 
