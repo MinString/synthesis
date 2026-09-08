@@ -37,7 +37,7 @@
 需要 Node.js 22.13 或更高版本。
 
 ```bash
-npm ci --include=optional
+SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci --include=optional
 npm run dev
 ```
 
@@ -45,25 +45,16 @@ npm run dev
 
 ### Linux 下 `sharp` 安装失败
 
-`sharp` 依赖针对当前系统的预编译可选包，因此不要使用 `--omit=optional`。如果在 x64 glibc Linux 上看到 `Attempting to build from source via node-gyp`，可显式指定平台重新安装：
+`sharp` 依赖针对当前系统的预编译可选包，因此不要使用 `--omit=optional`。如果系统中安装了全局 `libvips`，`sharp` 可能会自动改为源码编译。本项目建议忽略全局 `libvips`，直接使用官方预编译包：
 
 ```bash
-npm ci --include=optional --os=linux --cpu=x64 --libc=glibc
+SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci --include=optional
 ```
 
-安装前请先确认项目所在磁盘可写：
+如果仍然没有选中正确的 Linux 预编译包，可显式指定 x64 glibc 平台：
 
 ```bash
-test -w . && echo "目录可写" || echo "目录只读"
-```
-
-如果项目位于只读挂载的 NTFS 分区，请先修复或重新以可写模式挂载该分区。也可以将项目复制到 Linux 主目录后再安装：
-
-```bash
-mkdir -p ~/Projects/GreatUCAS
-rsync -a --exclude node_modules ./ ~/Projects/GreatUCAS/
-cd ~/Projects/GreatUCAS
-npm ci --include=optional --os=linux --cpu=x64 --libc=glibc
+SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci --include=optional --os=linux --cpu=x64 --libc=glibc
 ```
 
 ## 局域网访问
@@ -81,7 +72,7 @@ npm run dev -- --hostname 0.0.0.0
 生成生产构建：
 
 ```bash
-npm ci --include=optional
+SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci --include=optional
 npm run build
 ```
 
