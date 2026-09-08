@@ -223,7 +223,7 @@ export default function Game() {
           if (age >= 1.5 && ball.y - ball.r < DROP_LINE_Y) overLine = true;
         }
         dangerSeconds = overLine ? dangerSeconds + 1 / 120 : 0;
-        if (dangerSeconds >= 5) {
+        if (dangerSeconds >= 3) {
           const particleCount = Math.max(4, Math.min(24, Math.floor(600 / w.balls.length)));
           for (const ball of w.balls) launchCelebration(ball, time, true, particleCount);
           w.balls = [];
@@ -248,10 +248,13 @@ export default function Game() {
       ctx.restore();
       if (dangerSeconds > 0) {
         ctx.save();
-        ctx.setLineDash([8, 7]);
+        ctx.fillStyle = '#ff202b';
+        ctx.globalAlpha = .25 + .4 * (Math.sin(time / 80) + 1) / 2;
+        ctx.fillRect(0, DROP_LINE_Y - 10, WORLD_WIDTH, 20);
+        ctx.setLineDash([]);
         ctx.strokeStyle = '#ef3038';
-        ctx.globalAlpha = .4 + .6 * (Math.sin(time / 90) + 1) / 2;
-        ctx.lineWidth = 3;
+        ctx.globalAlpha = .7 + .3 * (Math.sin(time / 80) + 1) / 2;
+        ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(0, DROP_LINE_Y); ctx.lineTo(WORLD_WIDTH, DROP_LINE_Y); ctx.stroke();
         ctx.restore();
       }
