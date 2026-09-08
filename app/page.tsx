@@ -21,6 +21,7 @@ export default function Game() {
   const world = useRef<any>(null);
   const next = useRef(0);
   const pointerX = useRef(WORLD_WIDTH / 2);
+  const pressedPointer = useRef<number | null>(null);
   const easterActive = useRef(false);
   const maxClickStreak = useRef(0);
   const records = useRef({ best: 0, max: 0 });
@@ -289,7 +290,23 @@ export default function Game() {
     <div className="basket"><canvas ref={canvas} width={WORLD_WIDTH} height={WORLD_HEIGHT} tabIndex={0}
       aria-label="大学校徽球合成游戏区域。移动指针选择落点，点击放下球；左右方向键移动落点，空格或回车放下。"
       onPointerMove={e => { const bounds = e.currentTarget.getBoundingClientRect(); pointerX.current = (e.clientX-bounds.left)*WORLD_WIDTH/bounds.width; }}
-      onPointerDown={e => { const bounds = e.currentTarget.getBoundingClientRect(); pointerX.current = (e.clientX-bounds.left)*WORLD_WIDTH/bounds.width; drop(pointerX.current); }}
+      onPointerDown={e => {
+        if (!e.isPrimary || e.button !== 0) return;
+        pressedPointer.current = e.pointerId;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const bounds = e.currentTarget.getBoundingClientRect();
+        pointerX.current = (e.clientX-bounds.left)*WORLD_WIDTH/bounds.width;
+      }}
+      onPointerUp={e => {
+        if (pressedPointer.current !== e.pointerId) return;
+        pressedPointer.current = null;
+        const bounds = e.currentTarget.getBoundingClientRect();
+        pointerX.current = (e.clientX-bounds.left)*WORLD_WIDTH/bounds.width;
+        if (e.clientX >= bounds.left && e.clientX <= bounds.right && e.clientY >= bounds.top && e.clientY <= bounds.bottom) drop(pointerX.current);
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }}
+      onPointerCancel={() => { pressedPointer.current = null; }}
+      onLostPointerCapture={() => { pressedPointer.current = null; }}
       onKeyDown={e => { if (!['ArrowLeft','ArrowRight',' ','Enter'].includes(e.key)) return; e.preventDefault(); if(e.key==='ArrowLeft')pointerX.current=Math.max(0,pointerX.current-20); if(e.key==='ArrowRight')pointerX.current=Math.min(WORLD_WIDTH,pointerX.current+20); if(e.key===' '||e.key==='Enter')drop(pointerX.current); }}
     /></div>
   </main>;
