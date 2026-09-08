@@ -1,3 +1,23 @@
 @import 'tailwindcss';
-:root{--background:#f5f8fa;--foreground:#20313a;--primary:#2f6f95;--border:#536b78;color-scheme:light}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#fff 0%,var(--background) 52%,#edf3f6 100%);color:var(--foreground);font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif;font-size:16px}main{width:min(900px,100%);min-height:100dvh;margin:0 auto;padding:24px;display:flex;flex-direction:column;justify-content:center}.scoreboard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:0 10px 24px;text-align:center}.scoreboard span{display:block;margin-bottom:10px;color:#6e838e;font-size:14px}.scoreboard strong{display:block;min-height:1.25em;color:#27404d;font:600 clamp(21px,3.6vw,34px) ui-monospace,monospace;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.scoreboard>div:first-child strong{color:var(--primary)}.scoreboard>div:last-child strong{font-family:Arial,'PingFang SC',sans-serif}.basket{overflow:hidden;background:#fafdff;border:5px solid var(--border);border-top-width:3px;border-top-color:#8297a2;border-radius:9px 9px 24px 24px;box-shadow:inset 0 0 0 2px rgb(255 255 255 / 70%),inset 0 -14px 30px rgb(62 88 101 / 7%),0 20px 52px rgb(55 86 102 / 18%)}canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair;-webkit-tap-highlight-color:transparent}canvas:focus-visible{outline:3px solid #5d9bbd;outline-offset:-7px}@media(min-width:700px){main{width:min(900px,calc((100dvh - 150px)*800/650 + 48px))}}@media(max-width:600px){main{padding:18px 12px;justify-content:flex-start}.scoreboard{padding:8px 0 22px;gap:8px}.scoreboard span{font-size:14px}.scoreboard strong{font-size:clamp(18px,6vw,25px)}.scoreboard>div:last-child strong{font-size:clamp(15px,4.2vw,20px)}.basket{border-width:4px;border-top-width:3px}}
+:root{--foreground:#29272d;--muted:#716a61;--panel:#eef1f5;--score:#6650b7;color-scheme:light}
+*{box-sizing:border-box}
+html{background:#f4f5f7}
+body{margin:0;background:linear-gradient(180deg,#fff 0%,#f5f6f8 58%,#eef0f3 100%);color:var(--foreground);font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif;font-size:16px}
+button{font:inherit}
+.app{width:min(420px,100%);min-height:100dvh;margin:0 auto;padding-top:4px}
+.topbar{height:52px;padding:0 9px;display:grid;grid-template-columns:minmax(112px,1fr) 44px 44px 44px 46px;align-items:center;gap:4px}
+.brand{min-width:0}
+.brand h1{margin:0;color:#29272d;font-size:22px;line-height:1.1;font-weight:800;letter-spacing:-.7px;white-space:nowrap}
+.brand p{margin:1px 0 0;color:var(--muted);font-size:12px;line-height:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric{height:42px;padding:3px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;background:radial-gradient(circle,#eef1f5 0%,#e6e9f0 100%)}
+.metric span{color:var(--muted);font-size:11px;line-height:12px;font-weight:700;white-space:nowrap}
+.metric strong{max-width:100%;color:#29272d;font-size:16px;line-height:20px;font-weight:500;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.metric-score strong{color:var(--score)}
+.max-metric img{width:20px;height:20px;margin-top:1px;border-radius:50%;object-fit:cover}
+.restart-button{height:42px;padding:0 6px;border:0;border-radius:12px;background:radial-gradient(circle,#eef1f5 0%,#e6e9f0 100%);color:#4e4a45;font-size:12px;font-weight:800;cursor:pointer}
+.restart-button:hover{filter:brightness(.97)}
+.restart-button:active{transform:scale(.96)}
+.basket{position:relative;overflow:hidden;width:100%;background:linear-gradient(to top,#96fbc4 0%,#f9f586 100%);box-shadow:inset 0 0 0 1px rgb(255 255 255 / 28%)}
+canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair;-webkit-tap-highlight-color:transparent}
+canvas:focus-visible,.restart-button:focus-visible{outline:3px solid #6650b7;outline-offset:-4px}
+@media(max-width:419px){.app{width:100%}.topbar{grid-template-columns:minmax(108px,1fr) 42px 42px 42px 44px;padding-inline:5px;gap:3px}.brand h1{font-size:20px}.brand p{font-size:11px}.basket{width:100%}}

@@ -6,19 +6,26 @@ import { World, RADII } from './physics.mjs';
 
 const SCHOOLS = ['西安交通大学','武汉大学','哈尔滨工业大学','中国人民大学','北京理工大学','浙江大学','上海交通大学','复旦大学','北京大学','清华大学','中国科学院大学'];
 const COLORS = ['#b83d3e','#57709e','#204d7b','#2c68a0','#4c7669','#355bb0','#aa3639','#3d84c6','#bc4b5b','#a26d78','#7c9cdb'];
-const WORLD_WIDTH = 800;
-const WORLD_HEIGHT = 650;
+const WORLD_WIDTH = 420;
+const WORLD_HEIGHT = 651;
 
 export default function Game() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const world = useRef<any>(null);
   const next = useRef(0);
-  const pointer = useRef({ x: 400, y: 130, visible: false });
+  const pointer = useRef({ x: 210, y: 72, visible: false });
   const records = useRef({ best: 0, max: 0 });
   const [stats, setStats] = useState({ score: 0, best: 0, max: 0 });
 
   function drop(x: number, y: number) {
     if (world.current?.spawn(x, y, next.current)) next.current = Math.floor(Math.random() * 5);
+  }
+
+  function restart() {
+    world.current = new World(WORLD_WIDTH, WORLD_HEIGHT);
+    next.current = Math.floor(Math.random() * 5);
+    pointer.current = { x: WORLD_WIDTH / 2, y: 72, visible: false };
+    setStats(current => ({ ...current, score: 0 }));
   }
 
   useEffect(() => {
@@ -98,10 +105,15 @@ export default function Game() {
       const w = world.current;
       while (accumulator >= 1 / 120) { w.step(); accumulator -= 1 / 120; }
       ctx.clearRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-      ctx.fillStyle = '#d8e5ea';
-      for (let x = 20; x < WORLD_WIDTH; x += 30) for (let y = 20; y < WORLD_HEIGHT; y += 30) {
-        ctx.beginPath(); ctx.arc(x, y, 0.8, 0, Math.PI * 2); ctx.fill();
-      }
+      ctx.save();
+      ctx.setLineDash([8, 7]);
+      ctx.strokeStyle = 'rgba(76, 92, 69, 0.18)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(32, 95); ctx.lineTo(WORLD_WIDTH - 32, 95);
+      ctx.moveTo(32, 95); ctx.lineTo(32, WORLD_HEIGHT - 98);
+      ctx.stroke();
+      ctx.restore();
       for (const b of w.balls) {
         const t = Math.min(1, (b.mergeAge ?? 1) / 0.14);
         const ease = 1 - Math.pow(1 - t, 3);
@@ -137,8 +149,8 @@ export default function Game() {
     try {
       Promise.resolve(context.registerTool({
         name: 'drop_ball',
-        description: '在游戏区域指定空位生成下一颗大学校徽球，坐标范围 x 0–800、y 0–650。',
-        inputSchema: { type: 'object', properties: { x: { type: 'number', minimum: 0, maximum: 800 }, y: { type: 'number', minimum: 0, maximum: 650 } }, required: ['x','y'], additionalProperties: false },
+        description: '在游戏区域指定空位生成下一颗大学校徽球，坐标范围 x 0–420、y 0–651。',
+        inputSchema: { type: 'object', properties: { x: { type: 'number', minimum: 0, maximum: 420 }, y: { type: 'number', minimum: 0, maximum: 651 } }, required: ['x','y'], additionalProperties: false },
         annotations: { readOnlyHint: false },
         execute: (input: any) => {
           if (!input || !Number.isFinite(input.x) || !Number.isFinite(input.y)) throw new Error('无效坐标');
@@ -150,11 +162,19 @@ export default function Game() {
     return () => lifecycle.abort();
   }, []);
 
-  return <main>
-    <header className="scoreboard" aria-label="游戏分数">
-      <div><span>总分数</span><strong>{stats.score.toLocaleString()}</strong></div>
-      <div><span>历史最高</span><strong>{stats.best.toLocaleString()}</strong></div>
-      <div><span>历史最大</span><strong>{stats.max ? SCHOOLS[stats.max - 1] : '—'}</strong></div>
+  return <main className="app">
+    <header className="topbar" aria-label="游戏信息">
+      <div className="brand">
+        <h1>合成国科大</h1>
+        <p>点击空位·校徽相遇合成</p>
+      </div>
+      <div className="metric metric-score"><span>得分</span><strong>{stats.score.toLocaleString()}</strong></div>
+      <div className="metric"><span>最高</span><strong>{stats.best.toLocaleString()}</strong></div>
+      <div className="metric max-metric" title={stats.max ? `历史最大：${SCHOOLS[stats.max - 1]}` : '尚无历史最大校徽'}>
+        <span>最大</span>
+        {stats.max ? <img src={`/logos/${stats.max}.svg`} alt={SCHOOLS[stats.max - 1]} /> : <strong>—</strong>}
+      </div>
+      <button className="restart-button" type="button" onClick={restart} aria-label="重新开始游戏">重开</button>
     </header>
     <div className="basket"><canvas ref={canvas} width={WORLD_WIDTH} height={WORLD_HEIGHT} tabIndex={0}
       aria-label="大学校徽球合成游戏区域。点击空位生成球；方向键移动落点，空格或回车生成。"
