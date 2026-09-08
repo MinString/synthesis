@@ -220,7 +220,8 @@ export default function Game() {
         for (const ball of w.balls) {
           const age = (ballAges.get(ball) ?? 0) + 1 / 120;
           ballAges.set(ball, age);
-          if (age >= 1.5 && ball.y - ball.r < DROP_LINE_Y) overLine = true;
+          const touchesLine = ball.y - ball.r <= DROP_LINE_Y && ball.y + ball.r >= DROP_LINE_Y;
+          if (touchesLine || (age >= 1.5 && ball.y - ball.r <= DROP_LINE_Y)) overLine = true;
         }
         dangerSeconds = overLine ? dangerSeconds + 1 / 120 : 0;
         if (dangerSeconds >= 3) {
@@ -251,7 +252,7 @@ export default function Game() {
         ctx.fillStyle = '#ff202b';
         ctx.globalAlpha = .25 + .4 * (Math.sin(time / 80) + 1) / 2;
         ctx.fillRect(0, DROP_LINE_Y - 10, WORLD_WIDTH, 20);
-        ctx.setLineDash([]);
+        ctx.setLineDash([8, 7]);
         ctx.strokeStyle = '#ef3038';
         ctx.globalAlpha = .7 + .3 * (Math.sin(time / 80) + 1) / 2;
         ctx.lineWidth = 4;
