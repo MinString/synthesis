@@ -70,6 +70,7 @@ export default function Game() {
       x: number;
       y: number;
       startedAt: number;
+      explosion: boolean;
       particles: Array<{ angle: number; speed: number; spin: number; size: number; color: string }>;
     }> = [];
     const celebrationColors = ['#f04444','#ffb21c','#6857d9','#29b66f','#2c8ee6','#f46bb1'];
@@ -148,14 +149,15 @@ export default function Game() {
       ctx.restore();
     };
 
-    const launchCelebration = (ball: any, time: number) => {
+    const launchCelebration = (ball: any, time: number, explosion = false, count = 72) => {
       celebratedBalls.add(ball);
       celebrations.push({
         x: ball.x,
         y: ball.y,
         startedAt: time,
-        particles: Array.from({ length: 72 }, (_, i) => ({
-          angle: (Math.PI * 2 * i) / 72 + (Math.random() - .5) * .18,
+        explosion,
+        particles: Array.from({ length: count }, (_, i) => ({
+          angle: (Math.PI * 2 * i) / count + (Math.random() - .5) * .18,
           speed: 85 + Math.random() * 155,
           spin: (Math.random() - .5) * 12,
           size: 3 + Math.random() * 5,
@@ -197,18 +199,38 @@ export default function Game() {
         ctx.font = '42px system-ui';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('🎉', 0, 0);
+        if (!burst.explosion) ctx.fillText('🎉', 0, 0);
         ctx.restore();
       }
     };
 
     let frame = 0, previous = 0, accumulator = 0, lastUI = 0;
+    let dangerSeconds = 0;
+    let trackedWorld = world.current;
+    const ballAges = new WeakMap<object, number>();
     const draw = (time: number) => {
       if (!previous) previous = time;
       accumulator += Math.min((time - previous) / 1000, 0.05);
       previous = time;
       const w = world.current;
-      while (accumulator >= 1 / 120) { w.step(); accumulator -= 1 / 120; }
+      if (trackedWorld !== w) { dangerSeconds = 0; trackedWorld = w; celebrations.length = 0; }
+      while (accumulator >= 1 / 120) {
+        w.step(); accumulator -= 1 / 120;
+        let overLine = false;
+        for (const ball of w.balls) {
+          const age = (ballAges.get(ball) ?? 0) + 1 / 120;
+          ballAges.set(ball, age);
+          if (age >= 1.5 && ball.y - ball.r < DROP_LINE_Y) overLine = true;
+        }
+        dangerSeconds = overLine ? dangerSeconds + 1 / 120 : 0;
+        if (dangerSeconds >= 5) {
+          const particleCount = Math.max(4, Math.min(24, Math.floor(600 / w.balls.length)));
+          for (const ball of w.balls) launchCelebration(ball, time, true, particleCount);
+          w.balls = [];
+          dangerSeconds = 0;
+          break;
+        }
+      }
       for (const ball of w.balls) {
         if (ball.level === 10 && !celebratedBalls.has(ball)) launchCelebration(ball, time);
       }
@@ -224,6 +246,15 @@ export default function Game() {
       ctx.moveTo(previewX, DROP_LINE_Y); ctx.lineTo(previewX, WORLD_HEIGHT);
       ctx.stroke();
       ctx.restore();
+      if (dangerSeconds > 0) {
+        ctx.save();
+        ctx.setLineDash([8, 7]);
+        ctx.strokeStyle = '#ef3038';
+        ctx.globalAlpha = .4 + .6 * (Math.sin(time / 90) + 1) / 2;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(0, DROP_LINE_Y); ctx.lineTo(WORLD_WIDTH, DROP_LINE_Y); ctx.stroke();
+        ctx.restore();
+      }
       for (const b of w.balls) {
         const t = Math.min(1, (b.mergeAge ?? 1) / 0.14);
         const ease = 1 - Math.pow(1 - t, 3);
