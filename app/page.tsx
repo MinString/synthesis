@@ -8,11 +8,6 @@ const SCHOOLS = ['西安交通大学','武汉大学','哈尔滨工业大学','�
 const COLORS = ['#b83d3e','#57709e','#204d7b','#2c68a0','#4c7669','#355bb0','#aa3639','#3d84c6','#bc4b5b','#a26d78','#7c9cdb'];
 const WORLD_WIDTH = 420;
 const WORLD_HEIGHT = 651;
-const compactScore = new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 1 });
-
-function formatScore(value: number) {
-  return value < 10_000 ? String(value) : compactScore.format(value);
-}
 
 export default function Game() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -188,8 +183,8 @@ export default function Game() {
         <h1>合成国科大</h1>
         <p>点击空位·校徽相遇合成</p>
       </div>
-      <div className="metric metric-score" title={`得分：${stats.score.toLocaleString()}`}><span>得分</span><strong>{formatScore(stats.score)}</strong></div>
-      <div className="metric" title={`历史最高：${stats.best.toLocaleString()}`}><span>最高</span><strong>{formatScore(stats.best)}</strong></div>
+      <div className="metric metric-score" title={`得分：${stats.score.toLocaleString()}`}><span>得分</span><strong>{stats.score.toLocaleString()}</strong></div>
+      <div className="metric" title={`历史最高：${stats.best.toLocaleString()}`}><span>最高</span><strong>{stats.best.toLocaleString()}</strong></div>
       <div className="metric max-metric" title={stats.max ? `历史最大：${SCHOOLS[stats.max - 1]}` : '尚无历史最大校徽'}>
         <span>最大</span>
         {stats.max ? <img src={`/logos/${stats.max}.svg`} alt={SCHOOLS[stats.max - 1]} /> : <strong>—</strong>}
