@@ -247,7 +247,7 @@ export default function Game() {
       ctx.moveTo(previewX, DROP_LINE_Y); ctx.lineTo(previewX, WORLD_HEIGHT);
       ctx.stroke();
       ctx.restore();
-      if (dangerSeconds > 0) {
+      if (dangerSeconds >= 1) {
         ctx.save();
         ctx.fillStyle = '#ff202b';
         ctx.globalAlpha = .25 + .4 * (Math.sin(time / 80) + 1) / 2;
