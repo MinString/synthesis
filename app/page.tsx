@@ -9,9 +9,11 @@ const COLORS = ['#b83d3e','#57709e','#204d7b','#2c68a0','#4c7669','#355bb0','#aa
 const WORLD_WIDTH = 420;
 const WORLD_HEIGHT = 651;
 const DROP_LINE_Y = 110;
+const EASTER_LEVEL = 8;
 
 function spawnY(level: number) {
-  return DROP_LINE_Y - RADII[level] - 6;
+  const radius = RADII[level];
+  return Math.max(radius, DROP_LINE_Y - radius - 6);
 }
 
 export default function Game() {
@@ -19,7 +21,7 @@ export default function Game() {
   const world = useRef<any>(null);
   const next = useRef(0);
   const pointerX = useRef(WORLD_WIDTH / 2);
-  const smallestOnly = useRef(false);
+  const easterActive = useRef(false);
   const maxClickStreak = useRef(0);
   const records = useRef({ best: 0, max: 0 });
   const [stats, setStats] = useState({ score: 0, best: 0, max: 0 });
@@ -27,28 +29,28 @@ export default function Game() {
   function drop(x: number) {
     const level = next.current;
     if (world.current?.spawn(x, spawnY(level), level)) {
-      next.current = smallestOnly.current ? 0 : Math.floor(Math.random() * 5);
+      next.current = easterActive.current ? EASTER_LEVEL : Math.floor(Math.random() * 5);
     }
   }
 
   function restart() {
     world.current = new World(WORLD_WIDTH, WORLD_HEIGHT);
-    next.current = smallestOnly.current ? 0 : Math.floor(Math.random() * 5);
+    next.current = easterActive.current ? EASTER_LEVEL : Math.floor(Math.random() * 5);
     pointerX.current = WORLD_WIDTH / 2;
     setStats(current => ({ ...current, score: 0 }));
   }
 
   function handleMaxClick() {
-    if (smallestOnly.current) {
-      smallestOnly.current = false;
+    if (easterActive.current) {
+      easterActive.current = false;
       next.current = Math.floor(Math.random() * 5);
       maxClickStreak.current = 0;
       return;
     }
     maxClickStreak.current += 1;
     if (maxClickStreak.current === 10) {
-      smallestOnly.current = true;
-      next.current = 0;
+      easterActive.current = true;
+      next.current = EASTER_LEVEL;
       maxClickStreak.current = 0;
     }
   }

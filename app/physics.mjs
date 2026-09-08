@@ -1,7 +1,7 @@
 export const RADII=[18,24,31,39,48,58,69,81,94,108,124];
 export class World {
  constructor(w=800,h=650){this.w=w;this.h=h;this.balls=[];this.merges=0;this.score=0;this.max=-1;this.nextId=1;}
- spawn(x,y,level=Math.floor(Math.random()*5)) {if(!Number.isInteger(level)||level<0||level>4)return null;const r=RADII[level];x=Math.max(r,Math.min(this.w-r,x));y=Math.max(r,Math.min(this.h-r,y));if(this.balls.some(b=>Math.hypot(b.x-x,b.y-y)<b.r+r+1))return null;return this.add(x,y,level);}
+ spawn(x,y,level=Math.floor(Math.random()*5)) {if(!Number.isInteger(level)||level<0||level>10)return null;const r=RADII[level];x=Math.max(r,Math.min(this.w-r,x));y=Math.max(r,Math.min(this.h-r,y));if(this.balls.some(b=>Math.hypot(b.x-x,b.y-y)<b.r+r+1))return null;return this.add(x,y,level);}
  add(x,y,level){const b={id:this.nextId++,x,y,level,r:RADII[level],vx:0,vy:0};this.balls.push(b);this.max=Math.max(this.max,level);return b;}
  step(dt=1/120){for(const b of this.balls){b.mergeAge=(b.mergeAge??1)+dt;b.vy+=1000*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.vx*=.998;}
  const iterations=this.balls.length>90?4:this.balls.length>50?6:10;
