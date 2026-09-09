@@ -25,9 +25,13 @@ export default function Game() {
   const easterActive = useRef(false);
   const maxClickStreak = useRef(0);
   const records = useRef({ best: 0, max: 0 });
+  const gameStartBest = useRef(0);
+  const gameEnded = useRef(false);
   const [stats, setStats] = useState({ score: 0, best: 0, max: 0 });
+  const [gameOver, setGameOver] = useState<null | { score: number; level: number; newRecord: boolean }>(null);
 
   function drop(x: number) {
+    if (gameEnded.current) return;
     const level = next.current;
     if (world.current?.spawn(x, spawnY(level), level)) {
       next.current = easterActive.current ? EASTER_LEVEL : Math.floor(Math.random() * 5);
@@ -36,6 +40,9 @@ export default function Game() {
 
   function restart() {
     world.current = new World(WORLD_WIDTH, WORLD_HEIGHT);
+    gameEnded.current = false;
+    gameStartBest.current = records.current.best;
+    setGameOver(null);
     next.current = easterActive.current ? EASTER_LEVEL : Math.floor(Math.random() * 5);
     pointerX.current = WORLD_WIDTH / 2;
     setStats(current => ({ ...current, score: 0 }));
@@ -130,6 +137,7 @@ export default function Game() {
         : { score: w.score, best, max });
     };
     records.current = readRecords();
+    gameStartBest.current = records.current.best;
     setStats({ score: 0, ...records.current });
 
     const drawBall = (b: any, scale = 1, alpha = 1) => {
@@ -207,13 +215,21 @@ export default function Game() {
     let frame = 0, previous = 0, accumulator = 0, lastUI = 0;
     let dangerSeconds = 0;
     let trackedWorld = world.current;
+    let pendingGameOver: null | { score: number; level: number; newRecord: boolean } = null;
+    let gameOverRevealAt = 0;
     const ballAges = new WeakMap<object, number>();
     const draw = (time: number) => {
       if (!previous) previous = time;
       accumulator += Math.min((time - previous) / 1000, 0.05);
       previous = time;
       const w = world.current;
-      if (trackedWorld !== w) { dangerSeconds = 0; trackedWorld = w; celebrations.length = 0; }
+      if (trackedWorld !== w) {
+        dangerSeconds = 0;
+        pendingGameOver = null;
+        gameOverRevealAt = 0;
+        trackedWorld = w;
+        celebrations.length = 0;
+      }
       while (accumulator >= 1 / 120) {
         w.step(); accumulator -= 1 / 120;
         let overLine = false;
@@ -225,12 +241,21 @@ export default function Game() {
         }
         dangerSeconds = overLine ? dangerSeconds + 1 / 120 : 0;
         if (dangerSeconds >= 3) {
+          const finalScore = w.score;
+          const finalLevel = w.balls.reduce((highest: number, ball: any) => Math.max(highest, ball.level), 0);
+          pendingGameOver = { score: finalScore, level: finalLevel, newRecord: finalScore > gameStartBest.current };
+          gameOverRevealAt = time + 1200;
+          gameEnded.current = true;
           const particleCount = Math.max(4, Math.min(24, Math.floor(600 / w.balls.length)));
           for (const ball of w.balls) launchCelebration(ball, time, true, particleCount);
           w.balls = [];
           dangerSeconds = 0;
           break;
         }
+      }
+      if (pendingGameOver && time >= gameOverRevealAt) {
+        setGameOver(pendingGameOver);
+        pendingGameOver = null;
       }
       for (const ball of w.balls) {
         if (ball.level === 10 && !celebratedBalls.has(ball)) launchCelebration(ball, time);
@@ -343,6 +368,26 @@ export default function Game() {
       onPointerCancel={() => { pressedPointer.current = null; }}
       onLostPointerCapture={() => { pressedPointer.current = null; }}
       onKeyDown={e => { if (!['ArrowLeft','ArrowRight',' ','Enter'].includes(e.key)) return; e.preventDefault(); if(e.key==='ArrowLeft')pointerX.current=Math.max(0,pointerX.current-20); if(e.key==='ArrowRight')pointerX.current=Math.min(WORLD_WIDTH,pointerX.current+20); if(e.key===' '||e.key==='Enter')drop(pointerX.current); }}
-    /></div>
+    />
+      {gameOver && <div className="game-over-overlay" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
+        <section className="game-over-card">
+          <h2 id="game-over-title">本局结束</h2>
+          <p className="game-over-copy">差一点点就合成了</p>
+          <div className="result-row">
+            <div className="result-cell">
+              <span>等级</span>
+              <img className="result-logo" src={`/logos/${gameOver.level + 1}.svg`} alt={SCHOOLS[gameOver.level]} />
+              <small>{SCHOOLS[gameOver.level]}</small>
+            </div>
+            <div className="result-cell result-score">
+              <span>得分</span>
+              <strong>{gameOver.score.toLocaleString()}</strong>
+            </div>
+          </div>
+          {gameOver.newRecord && <p className="new-record">新纪录！</p>}
+          <button className="again-button" type="button" onClick={restart}>再合一次</button>
+        </section>
+      </div>}
+    </div>
   </main>;
 }
