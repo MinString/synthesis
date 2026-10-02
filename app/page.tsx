@@ -10,6 +10,8 @@ const WORLD_WIDTH = 420;
 const WORLD_HEIGHT = 651;
 const DROP_LINE_Y = 110;
 const EASTER_LEVEL = 8;
+const ASSET_BASE = (import.meta as any).env?.BASE_URL || '/';
+const assetUrl = (path: string) => `${ASSET_BASE}${path.replace(/^\/+/, '')}`;
 
 function spawnY(level: number) {
   const radius = RADII[level];
@@ -84,7 +86,7 @@ export default function Game() {
     const logoSprites: (HTMLCanvasElement | null)[] = SCHOOLS.map(() => null);
     SCHOOLS.forEach((_, i) => {
       const image = new Image();
-      image.src = `/logos/${i + 1}.svg`;
+      image.src = assetUrl(`logos/${i + 1}.svg`);
       image.onload = () => {
         const radius = RADII[i];
         const diameter = radius * 2;
@@ -343,7 +345,7 @@ export default function Game() {
       <div className="metric" title={`历史最高：${stats.best.toLocaleString()}`}><span>最高</span><strong>{stats.best.toLocaleString()}</strong></div>
       <button className="metric max-metric" type="button" onClick={handleMaxClick} title={stats.max ? `历史最大：${SCHOOLS[stats.max - 1]}` : '尚无历史最大校徽'}>
         <span>最大</span>
-        {stats.max ? <img src={`/logos/${stats.max}.svg`} alt={SCHOOLS[stats.max - 1]} /> : <strong>—</strong>}
+        {stats.max ? <img src={assetUrl(`logos/${stats.max}.svg`)} alt={SCHOOLS[stats.max - 1]} /> : <strong>—</strong>}
       </button>
       <button className="restart-button" type="button" onClick={restart} aria-label="重新开始游戏">重开</button>
     </header>
@@ -376,7 +378,7 @@ export default function Game() {
           <div className="result-row">
             <div className="result-cell">
               <span>等级</span>
-              <img className="result-logo" src={`/logos/${gameOver.level + 1}.svg`} alt={SCHOOLS[gameOver.level]} />
+              <img className="result-logo" src={assetUrl(`logos/${gameOver.level + 1}.svg`)} alt={SCHOOLS[gameOver.level]} />
               <small>{SCHOOLS[gameOver.level]}</small>
             </div>
             <div className="result-cell result-score">

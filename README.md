@@ -2,7 +2,7 @@
 
 一个以高校校徽为主题的物理合成游戏。选择横向落点后放下校徽球，两个相同等级的球接触时会合成下一级。目标是逐步合成最终的中国科学院大学校徽。
 
-线上地址：[https://ball-merge-eleven-m7q9.minstring169.chatgpt.site/](https://ball-merge-eleven-m7q9.minstring169.chatgpt.site/)
+线上地址：[https://minstring.github.io/synthesis/](https://minstring.github.io/synthesis/)
 
 ## 主要功能
 
@@ -82,9 +82,15 @@ npm run build
 npm run start
 ```
 
-### 使用 OpenAI Sites 发布
+### 使用 GitHub Pages 发布
 
-项目已经通过 `.openai/hosting.json` 关联 OpenAI Sites。在 Codex 中打开项目后，请求“构建并发布这个站点”即可执行构建、版本保存和上线更新。
+仓库包含 `.github/workflows/deploy-pages.yml`。推送到 `main` 分支后，GitHub Actions 会自动构建并发布到 GitHub Pages：
+
+```text
+https://minstring.github.io/synthesis/
+```
+
+也可以在仓库的 **Actions → Deploy GitHub Pages → Run workflow** 中手动触发部署。
 
 ### 部署到 Cloudflare Workers
 
